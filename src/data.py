@@ -74,9 +74,16 @@ class DataModule:
             datasets = load_dataset(*self.dataset_attr["load_args"])
 
             if "validation" not in datasets:
-                datasets["validation"] = datasets.pop(
-                    self.dataset_attr["test_split_key"]
-                )
+                if "test_split_key" in self.dataset_attr:
+                    datasets["validation"] = datasets.pop(
+                        self.dataset_attr["test_split_key"]
+                    )
+                elif "test_split_ratio" in self.dataset_attr:
+                    assert "train" in datasets, "train split should be in datasets"
+                    split_dataset = datasets["train"].train_test_split(test_size=self.dataset_attr["test_split_ratio"], seed=42)
+                    datasets["validation"] = split_dataset["test"]
+                    datasets["train"] = split_dataset["train"]
+
             assert datasets.keys() >= {"train", "validation"}
 
             os.makedirs(os.path.dirname(self.config.datasets_path), exist_ok=True)
