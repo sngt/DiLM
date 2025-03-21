@@ -7,6 +7,7 @@ from torch.nn import functional as F
 from transformers import (
     AutoConfig,
     AutoModelForCausalLM,
+    AutoModelForQuestionAnswering,
     AutoModelForSequenceClassification,
     AutoTokenizer,
     BitsAndBytesConfig,
@@ -18,7 +19,10 @@ from dataset_attrs import DATASET_ATTRS
 
 logger = logging.getLogger(__name__)
 
-AUTO_MODEL_CLASSES = {"single_label_classification": AutoModelForSequenceClassification}
+AUTO_MODEL_CLASSES = {
+    "single_label_classification": AutoModelForSequenceClassification,
+    "question_answering": AutoModelForQuestionAnswering,
+}
 
 MODEL_ATTRS = {
     "bert-base-uncased": {

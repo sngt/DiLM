@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 from dataclasses import dataclass
@@ -143,8 +144,9 @@ class GeneratorModel(nn.Module):
         }
 
         # generate data
+        MAX_ERROR_RATE = 0.5
         generated_data = {}
-        retry_count = 0
+        # retry_count = 0
         with trange(
             data_size,
             leave=False,
@@ -161,9 +163,10 @@ class GeneratorModel(nn.Module):
                 num_error = len(batch) - len(generated_samples)
                 if num_error > 0:
                     logger.warning(f"Number of failed samples is {num_error} (retry)")
-                    retry_count += num_error
+                    # retry_count += num_error
                     assert (
-                        retry_count < data_size
+                        # retry_count < data_size
+                        num_error / len(batch) < MAX_ERROR_RATE
                     ), "Too many samples failed to generate!!"
 
                 for sample_id, generated_sample in generated_samples.items():
@@ -205,10 +208,13 @@ class GeneratorModel(nn.Module):
         batch_generated_text = self.tokenizer.batch_decode(
             outputs[:, 1:], skip_special_tokens=True
         )
+        label_key = DATASET_ATTRS[self.task_name]["label_key"]
         sentence_keys = DATASET_ATTRS[self.task_name]["sentence_keys"]
+        problem_type = DATASET_ATTRS[self.task_name]["problem_type"]
         good_samples = {}
         for sample, generated_text in zip(batch, batch_generated_text):
             sentences = generated_text.split(self.sep_token)
+            answer = sentences.pop() if problem_type == "question_answering" else None
             if len(sentences) >= len(sentence_keys):
                 sentences = sentences[: len(sentence_keys)]
                 if "" in sentences:
@@ -217,7 +223,13 @@ class GeneratorModel(nn.Module):
                     key: sentence.strip()
                     for key, sentence in zip(sentence_keys, sentences)
                 }
-                generated_sample["labels"] = sample["labels"]
+                if problem_type == "question_answering":
+                    if not answer or answer not in sentences[0]:
+                        continue
+                    answer_start = sentences[0].index(answer)
+                    generated_sample[label_key] = json.dumps({"text": [answer], "answer_start": [answer_start]})
+                else:
+                    generated_sample[label_key] = sample["labels"]
                 good_samples[sample["sample_id"]] = generated_sample
 
         return good_samples

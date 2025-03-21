@@ -122,24 +122,28 @@ class TrainerBase(metaclass=ABCMeta):
             self.distilled_data_config.dpc
             * self.distilled_data_config.over_sample_ratio
         )
-        dataset_list = generator.generate_dataset(dpc=generate_dpc, n=5)
-        if self.distilled_data_config.over_sample_ratio > 1.0:
-            dataset_list = [
-                coreset_module.get_coreset(dataset, dpc=self.distilled_data_config.dpc)
-                for dataset in dataset_list
-            ]
+        try:
+            dataset_list = generator.generate_dataset(dpc=generate_dpc, n=5)
+            if self.distilled_data_config.over_sample_ratio > 1.0:
+                dataset_list = [
+                    coreset_module.get_coreset(dataset, dpc=self.distilled_data_config.dpc)
+                    for dataset in dataset_list
+                ]
 
-        results = evaluator.evaluate(
-            dataset_list=dataset_list,
-            learner=learner,
-            data_module=data_module,
-            save_result_dir=os.path.join(
-                self.config.save_valid_result_dir, f"step_{step}"
-            ),
-            verbose=True,
-        )
+            results = evaluator.evaluate(
+                dataset_list=dataset_list,
+                learner=learner,
+                data_module=data_module,
+                save_result_dir=os.path.join(
+                    self.config.save_valid_result_dir, f"step_{step}"
+                ),
+                verbose=True,
+            )
+            results = {f"valid.{k}": v for k, v in average(results).items()}
+        except Exception as e:
+            logger.error(e)
+            results = {f"valid.{evaluator.metric_key}": -100.0, "loss": 100.0}
 
-        results = {f"valid.{k}": v for k, v in average(results).items()}
         logger.info(
             "Validation [{:>{}}/{}]: {}".format(
                 step,

@@ -56,7 +56,8 @@ class DataModule:
         logger.info(f"Datasets: {self.datasets}")
 
         self.num_labels: int = self.dataset_attr["num_labels"]
-        assert self.num_labels == self.datasets["train"].features["labels"].num_classes
+        if hasattr(self.datasets["train"].features, "labels"):
+            assert self.num_labels == self.datasets["train"].features["labels"].num_classes
 
         # preprocess datasets
         self.run_preprocess()
@@ -86,6 +87,8 @@ class DataModule:
             # rename label_key
             assert self.dataset_attr["label_key"] in datasets["train"].features
             datasets = datasets.rename_column(self.dataset_attr["label_key"], "labels")
+        elif self.dataset_attr["problem_type"] == "question_answering":
+            datasets = datasets.map(lambda example: {"labels": 0})  # dummy label
         else:
             raise NotImplementedError
 
@@ -136,6 +139,8 @@ class DataModule:
 
             # sentences
             batch_sentences = [[s.strip() for s in batch[key]] for key in sentence_keys]
+            if self.dataset_attr["problem_type"] == "question_answering":
+                batch_sentences.append(list(map(lambda x: x["text"][0], batch[self.dataset_attr["label_key"]])))
             concat_sentences = [
                 f" {self.generator.sep_token} ".join(sents)
                 for sents in zip(*batch_sentences)

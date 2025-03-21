@@ -40,4 +40,16 @@ DATASET_ATTRS = {
         "metric_key": "combined_score",
         "label_dict": {0: "unequal", 1: "equal"},
     },
+    "squad": {
+        "load_args": ("squad",),
+        "sentence_keys": ("context", "question"),
+        "label_key": "answers",
+        "problem_type": "question_answering",
+        "test_split_key": "validation",
+        "num_labels": 1,
+        "metric_args": ("squad",),
+        "max_length": 855, # 901 * 95 // 100
+        "metric_key": "exact_match",
+        "label_dict": {},
+    },
 }

@@ -55,7 +55,7 @@ class TrainerLM(TrainerBase):
                 results = self.evaluate(
                     generator, learner, evaluator, data_module, coreset_module, step=it
                 )
-                if results[f"valid.{evaluator.metric_key}"] > best_val_score:
+                if results[f"valid.{evaluator.metric_key}"] >= best_val_score:
                     best_val_score = results[f"valid.{evaluator.metric_key}"]
                     generator.save_model(best_ckpt_path)
                     logger.info(f"Save best checkpoint at `{best_ckpt_path}`")
@@ -94,7 +94,7 @@ class TrainerLM(TrainerBase):
             generator, learner, evaluator, data_module, coreset_module, step=it + 1
         )
 
-        if results[f"valid.{evaluator.metric_key}"] > best_val_score:
+        if results[f"valid.{evaluator.metric_key}"] >= best_val_score:
             best_val_score = results[f"valid.{evaluator.metric_key}"]
             generator.save_model(best_ckpt_path)
             logger.info(f"Save best checkpoint at `{best_ckpt_path}`")
