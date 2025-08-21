@@ -30,6 +30,7 @@ class Metric:
     """
 
     def __init__(self, task_name: str):
+        self.task_name = task_name
         self.metric = evaluate.load(*DATASET_ATTRS[task_name]["metric_args"])
         self.preprocess = preprocess_for_classification
         self.metric_key = DATASET_ATTRS[task_name]["metric_key"]
@@ -43,6 +44,9 @@ class Metric:
             assert len(results) > 1
             results["combined_score"] = np.mean(list(results.values())).item()
         return results
+
+    def reset(self):
+        self.metric = evaluate.load(*DATASET_ATTRS[self.task_name]["metric_args"])
 
 
 def preprocess_for_classification(
@@ -158,6 +162,7 @@ class Evaluator:
             )
 
             learner.init_weights()
+            self.metric.reset()
             results = self.train_learner(learner=learner, train_loader=train_loader)
             results = self.evaluate_learner(learner, eval_loader)
             if verbose:
